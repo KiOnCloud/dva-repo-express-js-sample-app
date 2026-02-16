@@ -1,93 +1,663 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Elastic Beanstalk</title>
-    <style>
-      body {
-        color: #ffffff;
-        font-family: Arial, sans-serif;
-        font-size:14px;
-        -moz-transition-property: text-shadow;
-        -moz-transition-duration: 4s;
-        -webkit-transition-property: text-shadow;
-        -webkit-transition-duration: 4s;
-        text-shadow: none;
-      }
-      body.blurry {
-        -moz-transition-property: text-shadow;
-        -moz-transition-duration: 4s;
-        -webkit-transition-property: text-shadow;
-        -webkit-transition-duration: 4s;
-        text-shadow: #fff 0px 0px 25px;
-      }
-      a {
-        color: #55aaff;
-      }
-      .textColumn, .linksColumn {
-        padding: 2em;
-      }
-      .textColumn {
-        position: absolute;
-        top: 0px;
-        right: 50%;
-        bottom: 0px;
-        left: 0px;
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Countdown & Fireworks</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        text-align: right;
-        padding-top: 11em;
-        background-color: yellow;
+    body {
+      background: #0a0a1a;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+      height: 100vh;
+      width: 100vw;
+    }
 
-      }
-      .textColumn p {
-        width: 75%;
-        float:right;
-      }
-      .linksColumn {
-        position: absolute;
-        top:0px;
-        right: 0px;
-        bottom: 0px;
-        left: 50%;
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      cursor: crosshair;
+    }
 
-        background-color: #33342D;
+    /* Controls Panel */
+    #controls {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 20px 30px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+
+    #controls.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #controls label {
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    #controls input[type="number"] {
+      width: 70px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 16px;
+      text-align: center;
+      outline: none;
+    }
+
+    #controls input[type="number"]:focus {
+      border-color: #ff6b6b;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: #fff;
+    }
+
+    .btn-start:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(238, 90, 36, 0.5);
+    }
+
+    .btn-auto {
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      color: #fff;
+    }
+
+    .btn-auto:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px rgba(108, 92, 231, 0.5);
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, #636e72, #b2bec3);
+      color: #fff;
+    }
+
+    .btn-stop:hover {
+      transform: scale(1.05);
+    }
+
+    /* Countdown Display */
+    #countdown-display {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      text-align: center;
+      pointer-events: none;
+      display: none;
+    }
+
+    #countdown-display .time {
+      font-size: 150px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff6b6b, #feca57, #ff9ff3, #54a0ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      filter: drop-shadow(0 0 30px rgba(255, 107, 107, 0.5));
+      line-height: 1;
+    }
+
+    #countdown-display .label {
+      font-size: 24px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 10px;
+      letter-spacing: 5px;
+    }
+
+    /* Happy New Year message */
+    #hny-message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      text-align: center;
+      pointer-events: none;
+      display: none;
+    }
+
+    #hny-message h1 {
+      font-size: 80px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ff6b6b, #feca57, #ff9ff3, #48dbfb, #ff6b6b);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3s ease infinite;
+      filter: drop-shadow(0 0 40px rgba(255, 202, 87, 0.6));
+    }
+
+    #hny-message p {
+      font-size: 28px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 10px;
+      letter-spacing: 3px;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Click hint */
+    #click-hint {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 14px;
+      letter-spacing: 2px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="fireworks-canvas"></canvas>
+
+  <div id="controls">
+    <label for="countdown-input">Countdown (s):</label>
+    <input type="number" id="countdown-input" value="10" min="0" max="9999">
+    <button class="btn btn-start" id="btn-start" onclick="startCountdown()">Start Countdown</button>
+    <button class="btn btn-auto" id="btn-auto" onclick="startAutoFireworks()">Auto Fireworks</button>
+    <button class="btn btn-stop" id="btn-stop" onclick="stopAll()" style="display:none;">Stop</button>
+  </div>
+
+  <div id="countdown-display">
+    <div class="time" id="countdown-time">10</div>
+    <div class="label">SECONDS</div>
+  </div>
+
+  <div id="hny-message">
+    <h1>HAPPY NEW YEAR!</h1>
+    <p>Chuc Mung Nam Moi</p>
+  </div>
+
+  <div id="click-hint">Click anywhere to launch fireworks</div>
+
+  <script>
+    // ---- Canvas Setup ----
+    const canvas = document.getElementById('fireworks-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // ---- Utility ----
+    function random(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function randomColor() {
+      const colors = [
+        '#ff6b6b', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd',
+        '#01a3a4', '#f368e0', '#ff9f43', '#ee5a24', '#0abde3',
+        '#10ac84', '#c8d6e5', '#ff6348', '#7bed9f', '#70a1ff',
+        '#ffa502', '#ff4757', '#2ed573', '#1e90ff', '#ff6b81',
+        '#eccc68', '#a4b0be', '#dfe6e9', '#fd79a8', '#e17055'
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function hexToRgb(hex) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return { r, g, b };
+    }
+
+    // ---- Particle Class ----
+    class Particle {
+      constructor(x, y, color, velocity, size, gravity, friction, fade) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.rgb = hexToRgb(color);
+        this.velocity = velocity;
+        this.size = size || random(1.5, 3);
+        this.gravity = gravity || 0.04;
+        this.friction = friction || 0.98;
+        this.alpha = 1;
+        this.fade = fade || random(0.008, 0.02);
+        this.trail = [];
+        this.trailLength = Math.floor(random(3, 7));
       }
 
-      h1 {
-        color: #33342D;
-        font-size: 500%;
-        font-weight: normal;
-        margin-bottom: 0em;
+      update() {
+        this.trail.push({ x: this.x, y: this.y, alpha: this.alpha });
+        if (this.trail.length > this.trailLength) {
+          this.trail.shift();
+        }
+
+        this.velocity.x *= this.friction;
+        this.velocity.y *= this.friction;
+        this.velocity.y += this.gravity;
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+        this.alpha -= this.fade;
       }
-      h2 {
-        font-size: 200%;
-        font-weight: normal;
-        margin-bottom: 0em;
+
+      draw() {
+        // Draw trail
+        for (let i = 0; i < this.trail.length; i++) {
+          const t = this.trail[i];
+          const trailAlpha = (i / this.trail.length) * this.alpha * 0.5;
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, this.size * 0.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, ${trailAlpha})`;
+          ctx.fill();
+        }
+
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, ${this.alpha})`;
+        ctx.fill();
+
+        // Glow effect
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, ${this.alpha * 0.15})`;
+        ctx.fill();
       }
-      ul {
-        padding-left: 1em;
-        margin: 0px;
+
+      isAlive() {
+        return this.alpha > 0.01;
       }
-      li {
-        margin: 1em 0em;
+    }
+
+    // ---- Rocket Class ----
+    class Rocket {
+      constructor(x, targetY, color) {
+        this.x = x;
+        this.y = canvas.height;
+        this.targetY = targetY;
+        this.color = color || randomColor();
+        this.rgb = hexToRgb(this.color);
+        this.speed = random(8, 14);
+        this.trail = [];
+        this.trailLength = 10;
+        this.exploded = false;
+        this.angle = -Math.PI / 2 + random(-0.15, 0.15);
+        this.velocity = {
+          x: Math.cos(this.angle) * this.speed,
+          y: Math.sin(this.angle) * this.speed
+        };
       }
-    </style>
-  </head>
-  <body>
-    <div class="textColumn">
-      <h1>CloudMentorPro</h1>
-      <p>AWS Elastic Beanstalk Express JS Sample</p>
-    </div>
-    <div class="linksColumn">
-      <h2>What's Next?</h2>
-      <ul>
-        <li><a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/Welcome.html">AWS Elastic Beanstalk overview</a></li>
-        <li><a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/concepts.html">AWS Elastic Beanstalk concepts</a></li>
-        <li><a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs_express.html">Deploy an Express Application to AWS Elastic Beanstalk</a></li>
-        <li><a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs_express_elasticache.html">Deploy an Express Application with Amazon ElastiCache to AWS Elastic Beanstalk</a></li>
-        <li><a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs_geddy_elasticache.html">Deploy a Geddy Application with Amazon ElastiCache to AWS Elastic Beanstalk </a></li>
-        <li><a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create_deploy_nodejs_custom_container.html">Customizing and Configuring a Node.js Container </a></li>
-        <li><a href="http://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.loggingS3.title.html">Working with Logs</a></li>
-      </ul>
-    </div>
-  </body>
+
+      update() {
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > this.trailLength) {
+          this.trail.shift();
+        }
+
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+        this.velocity.y += 0.03;
+
+        if (this.y <= this.targetY) {
+          this.exploded = true;
+        }
+      }
+
+      draw() {
+        // Draw trail
+        for (let i = 0; i < this.trail.length; i++) {
+          const t = this.trail[i];
+          const alpha = (i / this.trail.length) * 0.6;
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, 2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, ${alpha})`;
+          ctx.fill();
+        }
+
+        // Draw rocket head
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+
+        // Glow
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${this.rgb.r}, ${this.rgb.g}, ${this.rgb.b}, 0.3)`;
+        ctx.fill();
+      }
+    }
+
+    // ---- Fireworks System ----
+    let particles = [];
+    let rockets = [];
+    let autoFireInterval = null;
+    let countdownInterval = null;
+    let animationRunning = false;
+    let isAutoMode = false;
+
+    function createExplosion(x, y, color) {
+      const particleCount = Math.floor(random(60, 120));
+      const type = Math.floor(random(0, 5));
+
+      if (type === 0) {
+        // Spherical burst
+        for (let i = 0; i < particleCount; i++) {
+          const angle = (Math.PI * 2 / particleCount) * i;
+          const speed = random(2, 7);
+          particles.push(new Particle(x, y, color || randomColor(), {
+            x: Math.cos(angle) * speed,
+            y: Math.sin(angle) * speed
+          }));
+        }
+      } else if (type === 1) {
+        // Double ring
+        const color1 = randomColor();
+        const color2 = randomColor();
+        for (let i = 0; i < particleCount / 2; i++) {
+          const angle = (Math.PI * 2 / (particleCount / 2)) * i;
+          particles.push(new Particle(x, y, color1, {
+            x: Math.cos(angle) * random(4, 6),
+            y: Math.sin(angle) * random(4, 6)
+          }));
+          particles.push(new Particle(x, y, color2, {
+            x: Math.cos(angle) * random(1.5, 3),
+            y: Math.sin(angle) * random(1.5, 3)
+          }));
+        }
+      } else if (type === 2) {
+        // Star pattern
+        const points = Math.floor(random(5, 8));
+        const c = randomColor();
+        for (let i = 0; i < particleCount; i++) {
+          const angle = (Math.PI * 2 / particleCount) * i;
+          const starFactor = (i % points === 0) ? random(5, 8) : random(2, 4);
+          particles.push(new Particle(x, y, c, {
+            x: Math.cos(angle) * starFactor,
+            y: Math.sin(angle) * starFactor
+          }));
+        }
+      } else if (type === 3) {
+        // Willow (drooping)
+        for (let i = 0; i < particleCount; i++) {
+          const angle = (Math.PI * 2 / particleCount) * i;
+          const speed = random(1, 5);
+          particles.push(new Particle(x, y, color || randomColor(), {
+            x: Math.cos(angle) * speed,
+            y: Math.sin(angle) * speed
+          }, random(1, 2.5), 0.06, 0.96, random(0.005, 0.012)));
+        }
+      } else {
+        // Multi-color scatter
+        for (let i = 0; i < particleCount; i++) {
+          const angle = random(0, Math.PI * 2);
+          const speed = random(1, 8);
+          particles.push(new Particle(x, y, randomColor(), {
+            x: Math.cos(angle) * speed,
+            y: Math.sin(angle) * speed
+          }));
+        }
+      }
+    }
+
+    function launchRocket(targetX, targetY) {
+      const x = targetX || random(canvas.width * 0.1, canvas.width * 0.9);
+      const y = targetY || random(canvas.height * 0.1, canvas.height * 0.4);
+      rockets.push(new Rocket(x, y));
+    }
+
+    function launchRandomFireworks() {
+      const count = Math.floor(random(1, 4));
+      for (let i = 0; i < count; i++) {
+        setTimeout(() => launchRocket(), i * random(50, 200));
+      }
+    }
+
+    // ---- Animation Loop ----
+    function animate() {
+      if (!animationRunning) return;
+
+      ctx.fillStyle = 'rgba(10, 10, 26, 0.2)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Update and draw rockets
+      for (let i = rockets.length - 1; i >= 0; i--) {
+        const rocket = rockets[i];
+        rocket.update();
+        rocket.draw();
+
+        if (rocket.exploded) {
+          createExplosion(rocket.x, rocket.y, rocket.color);
+          rockets.splice(i, 1);
+        }
+      }
+
+      // Update and draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update();
+        p.draw();
+
+        if (!p.isAlive()) {
+          particles.splice(i, 1);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function startAnimation() {
+      if (!animationRunning) {
+        animationRunning = true;
+        animate();
+      }
+    }
+
+    function stopAnimation() {
+      animationRunning = false;
+    }
+
+    // ---- Countdown Logic ----
+    function startCountdown() {
+      stopAll();
+
+      const seconds = parseInt(document.getElementById('countdown-input').value) || 10;
+      let remaining = seconds;
+
+      const countdownDisplay = document.getElementById('countdown-display');
+      const countdownTime = document.getElementById('countdown-time');
+      const hnyMessage = document.getElementById('hny-message');
+
+      countdownDisplay.style.display = 'block';
+      hnyMessage.style.display = 'none';
+      countdownTime.textContent = remaining;
+
+      document.getElementById('btn-start').style.display = 'none';
+      document.getElementById('btn-auto').style.display = 'none';
+      document.getElementById('btn-stop').style.display = 'inline-block';
+
+      startAnimation();
+
+      countdownInterval = setInterval(() => {
+        remaining--;
+        countdownTime.textContent = remaining;
+
+        // Fire some teasers in the last few seconds
+        if (remaining <= 3 && remaining > 0) {
+          launchRocket();
+        }
+
+        if (remaining <= 0) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+          countdownDisplay.style.display = 'none';
+          hnyMessage.style.display = 'block';
+
+          // Grand finale!
+          triggerGrandFinale();
+        }
+      }, 1000);
+    }
+
+    function triggerGrandFinale() {
+      // Intense burst of fireworks
+      let wave = 0;
+      const finaleInterval = setInterval(() => {
+        const count = Math.floor(random(3, 6));
+        for (let i = 0; i < count; i++) {
+          setTimeout(() => launchRocket(), i * random(30, 100));
+        }
+        wave++;
+        if (wave > 15) {
+          clearInterval(finaleInterval);
+          // Continue with auto mode
+          startAutoFire();
+        }
+      }, 300);
+    }
+
+    function startAutoFireworks() {
+      stopAll();
+
+      const hnyMessage = document.getElementById('hny-message');
+      const countdownDisplay = document.getElementById('countdown-display');
+      countdownDisplay.style.display = 'none';
+      hnyMessage.style.display = 'block';
+
+      document.getElementById('btn-start').style.display = 'none';
+      document.getElementById('btn-auto').style.display = 'none';
+      document.getElementById('btn-stop').style.display = 'inline-block';
+
+      isAutoMode = true;
+      startAnimation();
+      startAutoFire();
+    }
+
+    function startAutoFire() {
+      isAutoMode = true;
+      if (autoFireInterval) clearInterval(autoFireInterval);
+      autoFireInterval = setInterval(() => {
+        launchRandomFireworks();
+      }, random(300, 800));
+    }
+
+    function stopAll() {
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+      }
+      if (autoFireInterval) {
+        clearInterval(autoFireInterval);
+        autoFireInterval = null;
+      }
+
+      isAutoMode = false;
+
+      document.getElementById('countdown-display').style.display = 'none';
+      document.getElementById('hny-message').style.display = 'none';
+      document.getElementById('btn-start').style.display = 'inline-block';
+      document.getElementById('btn-auto').style.display = 'inline-block';
+      document.getElementById('btn-stop').style.display = 'none';
+
+      // Clear canvas smoothly
+      setTimeout(() => {
+        if (!isAutoMode && !countdownInterval) {
+          particles = [];
+          rockets = [];
+          stopAnimation();
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }, 3000);
+    }
+
+    // ---- Click to Launch Fireworks ----
+    canvas.addEventListener('click', (e) => {
+      startAnimation();
+      const x = e.clientX;
+      const y = e.clientY;
+
+      // Launch rocket towards click position
+      const rocket = new Rocket(
+        random(x - 50, x + 50),
+        y
+      );
+      rockets.push(rocket);
+
+      // Launch a couple more nearby for a nice effect
+      if (Math.random() > 0.4) {
+        setTimeout(() => {
+          rockets.push(new Rocket(
+            random(x - 100, x + 100),
+            random(y - 50, y + 50)
+          ));
+        }, random(50, 200));
+      }
+    });
+
+    // ---- Toggle controls visibility on hover ----
+    const controls = document.getElementById('controls');
+    let controlsTimeout;
+
+    document.addEventListener('mousemove', () => {
+      controls.classList.remove('hidden');
+      clearTimeout(controlsTimeout);
+      if (isAutoMode || countdownInterval) {
+        controlsTimeout = setTimeout(() => {
+          controls.classList.add('hidden');
+        }, 3000);
+      }
+    });
+
+    // ---- Initial draw (dark bg) ----
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  </script>
+</body>
 </html>
