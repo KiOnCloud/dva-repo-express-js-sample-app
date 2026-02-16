@@ -41,12 +41,6 @@
       gap: 15px;
       flex-wrap: wrap;
       justify-content: center;
-      transition: opacity 0.5s ease;
-    }
-
-    #controls.hidden {
-      opacity: 0;
-      pointer-events: none;
     }
 
     #controls label {
@@ -179,6 +173,48 @@
       100% { background-position: 0% 50%; }
     }
 
+    /* Settings Bubble */
+    #settings-bubble {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      font-size: 22px;
+    }
+
+    #settings-bubble:hover {
+      transform: scale(1.15);
+      background: rgba(0, 0, 0, 0.8);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(255, 107, 107, 0.3);
+    }
+
+    #settings-bubble.visible {
+      display: flex;
+    }
+
+    /* Dialog enter/exit animation */
+    #controls {
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    #controls.dialog-hidden {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+      pointer-events: none;
+    }
+
     /* Click hint */
     #click-hint {
       position: fixed;
@@ -208,6 +244,8 @@
     <button class="btn btn-auto" id="btn-auto" onclick="startAutoFireworks()">Auto Fireworks</button>
     <button class="btn btn-stop" id="btn-stop" onclick="stopAll()" style="display:none;">Stop</button>
   </div>
+
+  <div id="settings-bubble" onclick="toggleSettingsDialog()">&#9881;</div>
 
   <div id="countdown-display">
     <div class="time" id="countdown-time">10</div>
@@ -504,6 +542,38 @@
       animationRunning = false;
     }
 
+    // ---- Dialog / Bubble Logic ----
+    const controls = document.getElementById('controls');
+    const settingsBubble = document.getElementById('settings-bubble');
+
+    function hideDialog() {
+      controls.classList.add('dialog-hidden');
+      settingsBubble.classList.add('visible');
+    }
+
+    function showDialog() {
+      controls.classList.remove('dialog-hidden');
+      settingsBubble.classList.remove('visible');
+    }
+
+    function toggleSettingsDialog() {
+      if (controls.classList.contains('dialog-hidden')) {
+        showDialog();
+        // Show all buttons depending on state
+        if (isAutoMode || countdownInterval) {
+          document.getElementById('btn-start').style.display = 'none';
+          document.getElementById('btn-auto').style.display = 'none';
+          document.getElementById('btn-stop').style.display = 'inline-block';
+        } else {
+          document.getElementById('btn-start').style.display = 'inline-block';
+          document.getElementById('btn-auto').style.display = 'inline-block';
+          document.getElementById('btn-stop').style.display = 'none';
+        }
+      } else {
+        hideDialog();
+      }
+    }
+
     // ---- Countdown Logic ----
     function startCountdown() {
       stopAll();
@@ -522,6 +592,7 @@
       document.getElementById('btn-start').style.display = 'none';
       document.getElementById('btn-auto').style.display = 'none';
       document.getElementById('btn-stop').style.display = 'inline-block';
+      hideDialog();
 
       startAnimation();
 
@@ -574,6 +645,7 @@
       document.getElementById('btn-start').style.display = 'none';
       document.getElementById('btn-auto').style.display = 'none';
       document.getElementById('btn-stop').style.display = 'inline-block';
+      hideDialog();
 
       isAutoMode = true;
       startAnimation();
@@ -605,6 +677,7 @@
       document.getElementById('btn-start').style.display = 'inline-block';
       document.getElementById('btn-auto').style.display = 'inline-block';
       document.getElementById('btn-stop').style.display = 'none';
+      showDialog();
 
       // Clear canvas smoothly
       setTimeout(() => {
@@ -638,20 +711,6 @@
             random(y - 50, y + 50)
           ));
         }, random(50, 200));
-      }
-    });
-
-    // ---- Toggle controls visibility on hover ----
-    const controls = document.getElementById('controls');
-    let controlsTimeout;
-
-    document.addEventListener('mousemove', () => {
-      controls.classList.remove('hidden');
-      clearTimeout(controlsTimeout);
-      if (isAutoMode || countdownInterval) {
-        controlsTimeout = setTimeout(() => {
-          controls.classList.add('hidden');
-        }, 3000);
       }
     });
 
